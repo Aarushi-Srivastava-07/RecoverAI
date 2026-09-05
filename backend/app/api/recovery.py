@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.models import AuditLog, Customer, PaymentEvent, RecoveryAction
 from app.db.session import get_db
 from app.services.decision_service import process_incident
+from app.services.benchmark_service import synthetic_benchmark
 
 router = APIRouter(tags=["recovery"])
 
@@ -64,11 +65,5 @@ def audits(db: Session = Depends(get_db)): return [{"id":a.id,"timestamp":a.crea
 @router.get("/analytics")
 def analytics(db: Session = Depends(get_db)):
     items = db.query(RecoveryAction).all(); total = len(items); risk = sum(x.amount for x in items); recovered = sum(x.recovered_amount for x in items)
-    # Baseline replays an uncontextualised generic retry: only high-confidence transient
-    # first/second attempts recover; it cannot resolve expired methods or unsafe repeats.
-    baseline = 0.0
-    for item in items:
-        payment = db.get(PaymentEvent, item.event_id)
-        if payment and payment.failure_reason in {"network", "technical"} and payment.attempt_number < 3 and item.recovery_probability >= .75:
-            baseline += item.amount
-    return {"total_failed_payments":total,"revenue_at_risk":risk,"recovered_revenue":recovered,"recovery_rate":round(recovered/risk*100,2) if risk else 0,"pending_actions":sum(x.status in {"PENDING","SIMULATED_PENDING"} for x in items),"escalations":sum(x.action=="ESCALATE" for x in items),"stopped_automations":sum(x.action=="STOP" for x in items),"baseline_recovered_revenue":baseline,"recoverai_recovered_revenue":recovered,"improvement_percentage":round((recovered-baseline)/baseline*100,2) if baseline else 0}
+    benchmark = synthetic_benchmark()
+    return {"total_failed_payments":total,"revenue_at_risk":risk,"recovered_revenue":recovered,"recovery_rate":round(recovered/risk*100,2) if risk else 0,"pending_actions":sum(x.status in {"PENDING","SIMULATED_PENDING"} for x in items),"escalations":sum(x.action=="ESCALATE" for x in items),"stopped_automations":sum(x.action=="STOP" for x in items),"demo_metrics_label":"Interactive demo activity — repeated runs are included and are not a benchmark.","baseline_recovered_revenue":benchmark["always_retry_recovered_revenue"],"recoverai_recovered_revenue":benchmark["recoverai_recovered_revenue"],"improvement_percentage":benchmark["improvement_percentage"],"synthetic_benchmark":benchmark}
