@@ -1,52 +1,58 @@
 # RecoverAI
 
-RecoverAI is a Razorpay Buildathon 2026 submission concept for safely improving failed subscription payment recovery. It will combine contextual recovery scoring and AI explanations with a deterministic policy layer that controls every bounded action.
+### Autonomous AI Revenue Recovery for Failed Subscription Payments
 
-## Current MVP status
+RecoverAI is a Razorpay Buildathon 2026 submission for **Track 03 — AI Revenue Recovery**.
 
-This repository currently contains only the application foundation:
+RecoverAI is an AI-assisted revenue recovery system designed to handle failed subscription payments intelligently. Instead of blindly retrying every failed payment, the system analyzes payment context, estimates recovery probability, applies deterministic financial safety policies, selects a bounded recovery action, and records the complete decision trail.
 
-- React + Vite + Tailwind client with a connection-status placeholder
-- FastAPI health endpoint at `GET /api/health`
-- SQLite and SQLAlchemy configuration foundation (no domain models yet)
-- Environment and secret-handling examples
-- A real local logistic-regression recovery model trained against a 5,000-row synthetic dataset with held-out evaluation
-- Deterministic policy controls, idempotent simulated webhook ingestion, bounded demo recovery actions, SQLite audit records, and metrics
-- A dashboard that can trigger and display the full simulated recovery workflow
+> **Current implementation runs in DEMO / SIMULATION MODE.**
+>
+> No real customer communication or real payment transaction is performed by the application.
 
-All recovery actions currently run in clearly labelled **DEMO / SIMULATION MODE**. No real Razorpay payment action, customer communication, or LLM integration is implemented.
+---
 
-## Architecture
+## 🚀 The Problem
 
-`Event → Context → ML score → AI recommendation → deterministic policy gate → action executor → audit log → outcome`
+Failed subscription payments create recurring revenue leakage.
 
-The AI layer will be advisory only; it will never receive secrets or execute financial actions. The policy layer will make the final allow/block decision. See [architecture notes](docs/architecture.md).
+A failed payment does not always mean the customer is lost:
 
-## Local setup
+- Some failures are temporary and should be retried.
+- Some require a different payment method or recovery path.
+- Repeated failures should not trigger unlimited retries.
+- High-value payments may require human approval.
+- Duplicate webhook events should not trigger duplicate recovery actions.
+- Some cases should simply be stopped or escalated.
 
-```powershell
-cd backend
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-```
+A naive system can therefore either:
 
-```powershell
-cd frontend
-npm install
-npm run dev
-```
+1. Retry too aggressively and create unnecessary payment attempts, or
+2. Stop too early and lose recoverable revenue.
 
-Open `http://localhost:5173`. The Vite proxy forwards `/api/health` to port 8000.
+RecoverAI addresses this with an AI-assisted decision pipeline combined with deterministic safety controls.
 
-## Checks
+---
 
-```powershell
-cd backend; pytest
-cd ../frontend; npm run lint; npm run build
-```
+# 💡 Solution
 
-## Next phase
+RecoverAI follows this workflow:
 
-For a live integration, add Razorpay Test Mode credentials server-side, validate webhook signatures, and replace only the simulated executor behind the existing policy gate.
+```text
+Failed Payment Event
+        ↓
+Payment / Subscription Context
+        ↓
+ML Recovery Probability
+        ↓
+AI Diagnosis / Explanation
+        ↓
+Deterministic Policy Engine
+        ↓
+Recovery Decision
+        ↓
+Bounded Recovery Action
+        ↓
+Audit Trail + Analytics
+        ↓
+Merchant Dashboard
